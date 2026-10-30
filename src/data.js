@@ -88,11 +88,13 @@ export function initialState() {
     held: 0,
     connections: 4,
     filter: 'all',
+    sort: 'fit', // 'fit' | 'rating' | 'time'
     classes: CLASSES,
     free: ['1-11', '1-12', '1-13', '3-11', '3-12', '4-14', '4-15'],
     have: ['SQL', 'Excel', 'Business analysis', 'Presenting'],
     want: ['Python', 'Machine learning', 'UX design', 'AI tools'],
-    joined: {}, // requestId -> 'joined' | 'done'
+    joined: {}, // requestId -> 'pending' (sent, waiting for them to accept) | 'joined' | 'done'
+    chats: {}, // requestId -> [{ from: 'me' | 'them', text }]
     ratings: {}, // requestId -> { stars, comment } you gave after a session
     myPosts: [],
     passport: [

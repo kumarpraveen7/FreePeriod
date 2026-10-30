@@ -568,3 +568,30 @@ label.f, p.f { display: block; font-weight: 600; font-size: 15px; margin: 22px 0
 .drop .muted { font-size: 13px; }
 .upload-links { display: flex; justify-content: space-between; gap: 8px; margin-top: 6px; }
 .upload-links .btn-quiet { display: inline-flex; align-items: center; font-size: 14px; }
+
+/* ---------- Sort, requests waiting to be accepted, chat ---------- */
+.section-row:has(.sort) { align-items: center; flex-wrap: wrap; }
+.sort { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--ink-2); }
+.sort .input { width: auto; min-height: 38px; padding: 4px 32px 4px 12px; font-size: 14px; border-radius: 10px; }
+.card-score { display: inline-flex; align-items: center; gap: 3px; margin-left: auto; font-size: 13px; color: var(--ink-2); white-space: nowrap; }
+.card-score svg { color: var(--ink); }
+.card-score b { color: var(--ink); font-weight: 700; }
+.status.pending { color: var(--hl-ink); background: var(--hl); padding: 1px 8px; border-radius: 6px; }
+.panel.waiting { background: var(--hl-tint); border-color: transparent; }
+.panel.waiting p { color: var(--ink); }
+.pulse { width: 9px; height: 9px; border-radius: 50%; background: var(--hl-ink); animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: 0.25; } }
+.chat-open { margin-top: 16px; gap: 8px; }
+.chat { gap: 12px; }
+.chat-log { display: grid; gap: 8px; max-height: 260px; overflow-y: auto; }
+.bubble { display: flex; align-items: flex-end; gap: 8px; max-width: 85%; }
+.bubble p { margin: 0; padding: 9px 13px; border-radius: 16px; font-size: 15px; line-height: 1.4; }
+.bubble.them p { background: var(--surface); border: 1px solid var(--line); color: var(--ink); border-bottom-left-radius: 4px; }
+.bubble.me { justify-self: end; }
+.bubble.me p { background: var(--action); color: var(--action-ink); border-bottom-right-radius: 4px; }
+.typing { margin: 0; font-size: 13px; color: var(--ink-2); font-style: italic; }
+.chat-row { display: flex; gap: 8px; }
+.chat-row .input { min-height: 44px; }
+.chat-row .btn { min-height: 44px; }
+.chat-row .btn:disabled { opacity: 0.5; cursor: default; }
+@media (prefers-reduced-motion: reduce) { .pulse { animation: none; } }

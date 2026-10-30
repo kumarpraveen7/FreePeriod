@@ -1,6 +1,6 @@
 import { TYPES } from '../data.js';
-import { when, fmt, initials } from '../utils.js';
-import { Clock, Pin, Spark } from '../icons.jsx';
+import { when, fmt, initials, ratingOf } from '../utils.js';
+import { Clock, Pin, Spark, Star } from '../icons.jsx';
 
 export function CreditTag({ type }) {
   if (type === 'learn') return <span className="credit">Costs 1 credit</span>;
@@ -10,12 +10,15 @@ export function CreditTag({ type }) {
 
 export function StatusTag({ status, type }) {
   if (status === 'done') return <span className="status">Done</span>;
+  if (status === 'pending') return <span className="status pending">Requested</span>;
   if (status) return <span className="status">Joined</span>;
   return <CreditTag type={type} />;
 }
 
 // compact = used inside the gap timeline, where the hour is already shown by the column
-export default function RequestCard({ r, status, onOpen, compact = false, reason }) {
+// myStars = the rating you gave this person, if any, so their average includes it
+export default function RequestCard({ r, status, onOpen, compact = false, reason, myStars }) {
+  const score = ratingOf(r, myStars);
   return (
     <button type="button" className={`card${compact ? ' compact' : ''}`} onClick={() => onOpen(r.id)}>
       <span className="row">
@@ -26,6 +29,7 @@ export default function RequestCard({ r, status, onOpen, compact = false, reason
       <span className="person-line">
         <span className="avatar sm" aria-hidden="true">{initials(r.who)}</span>
         <span>{r.who}, {r.course}{r.spots ? `. ${r.spots}` : ''}</span>
+        {score && <span className="card-score" aria-label={`Rated ${score.avg.toFixed(1)} from ${score.count} sessions`}><Star size={13} /><b>{score.avg.toFixed(1)}</b>({score.count})</span>}
       </span>
       {compact
         ? <span className="meta"><Pin /><span>{fmt(r.start)}, {r.place}</span></span>

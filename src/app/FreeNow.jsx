@@ -1,19 +1,29 @@
 import { useState } from 'react';
 import { REQUESTS, TYPES, TODAY } from '../data.js';
-import { nextGap, inGap, overlaps, gapLabel, fmt, fitScore, smartMatch, audienceFor, when } from '../utils.js';
+import { nextGap, inGap, overlaps, gapLabel, fmt, sortRequests, smartMatch, audienceFor, when } from '../utils.js';
 import RequestCard from '../components/RequestCard.jsx';
 import WeekGrid from '../components/WeekGrid.jsx';
 import { Search, Spark, Clock, Pin, Arrow } from '../icons.jsx';
 
 const FILTERS = [['all', 'All'], ['learn', 'Learn'], ['teach', 'Teach'], ['swap', 'Swap'], ['team', 'Team'], ['event', 'Group plans']];
+const SORTS = [['fit', 'Best fit'], ['rating', 'Highest rated'], ['time', 'Soonest']];
 const EXAMPLES = ['stuck on a pandas merge', 'need a designer for my hackathon team', 'practise for an interview', 'learn AI tools'];
 
 export default function FreeNow({ state, actions }) {
   const [query, setQuery] = useState('');
   const [asked, setAsked] = useState('');
-  const { free, filter, joined, myPosts, have, want } = state;
+  const { free, filter, sort, joined, ratings, myPosts, have, want } = state;
   const g = nextGap(free);
-  const rank = (a, b) => fitScore(b, have, want) - fitScore(a, have, want);
+  const order = (list) => sortRequests(list, sort, { have, want, ratings });
+  const card = (r, props) => <RequestCard key={r.id} r={r} status={joined[r.id]} myStars={ratings[r.id]?.stars} onOpen={actions.open} {...props} />;
+  const sortPicker = (id) => (
+    <label className="sort" htmlFor={id}>
+      <span>Sort by</span>
+      <select id={id} className="input" value={sort} onChange={(e) => actions.setSort(e.target.value)}>
+        {SORTS.map(([k, label]) => <option key={k} value={k}>{label}</option>)}
+      </select>
+    </label>
+  );
 
   const run = (text) => { const t = (text ?? query).trim(); setQuery(t); setAsked(t); };
   const results = asked ? smartMatch(asked, free) : [];
@@ -34,10 +44,10 @@ export default function FreeNow({ state, actions }) {
   const pass = (r) => filter === 'all' || r.type === filter;
   const hours = [];
   for (let h = g.s; h < g.e; h++) hours.push(h);
-  const rest = REQUESTS.filter((r) => overlaps(r, free) && !gapReqs.includes(r) && pass(r)).sort((a, b) => a.day - b.day || a.start - b.start);
+  const rest = order(REQUESTS.filter((r) => overlaps(r, free) && !gapReqs.includes(r) && pass(r)));
   const later = rest.filter((r) => r.day >= TODAY);
   const next = rest.filter((r) => r.day < TODAY);
-  const mySessions = REQUESTS.filter((r) => joined[r.id] === 'joined');
+  const mySessions = REQUESTS.filter((r) => joined[r.id] === 'joined' || joined[r.id] === 'pending');
   const audience = audienceFor(g);
 
   return (
@@ -69,7 +79,7 @@ export default function FreeNow({ state, actions }) {
                 <>
                   <p className="group">Best matches for “{asked}”</p>
                   <div className="cards">
-                    {results.map(({ r, reason }) => <RequestCard key={r.id} r={r} status={joined[r.id]} onOpen={actions.open} reason={reason} />)}
+                    {results.map(({ r, reason }) => card(r, { reason }))}
                   </div>
                 </>
               ) : (
@@ -104,15 +114,15 @@ export default function FreeNow({ state, actions }) {
         <section>
           <div className="section-row">
             <h2 className="h-sub">Inside your gap</h2>
-            <span className="muted">Ranked by your skills</span>
+            {sortPicker('sort-gap')}
           </div>
           <div className="timeline" style={{ '--cols': hours.length }}>
             {hours.map((h) => {
-              const list = gapReqs.filter((r) => r.start === h && pass(r)).sort(rank);
+              const list = order(gapReqs.filter((r) => r.start === h && pass(r)));
               return (
                 <div key={h} className="tl-col">
                   <div className="tl-head"><b>{fmt(h)}</b><span>{list.length ? `${list.length} ${list.length === 1 ? 'match' : 'matches'}` : 'Open slot'}</span></div>
-                  {list.map((r) => <RequestCard key={r.id} r={r} status={joined[r.id]} onOpen={actions.open} compact />)}
+                  {list.map((r) => card(r, { compact: true }))}
                   {!list.length && <button type="button" className="tl-empty" onClick={() => actions.go('post')}>Post something for {fmt(h)}</button>}
                 </div>
               );
@@ -123,14 +133,15 @@ export default function FreeNow({ state, actions }) {
         <section>
           <div className="section-row">
             <h2 className="h-sub">More matches this week</h2>
+            {sortPicker('sort-week')}
           </div>
           <div className="chips filters" role="group" aria-label="Filter by type">
             {FILTERS.map(([f, label]) => (
               <button key={f} type="button" className="chip" aria-pressed={filter === f} onClick={() => actions.setFilter(f)}>{label}</button>
             ))}
           </div>
-          {later.length > 0 && <div className="cards">{later.map((r) => <RequestCard key={r.id} r={r} status={joined[r.id]} onOpen={actions.open} />)}</div>}
-          {next.length > 0 && (<><p className="group">Next week</p><div className="cards">{next.map((r) => <RequestCard key={r.id} r={r} status={joined[r.id]} onOpen={actions.open} />)}</div></>)}
+          {later.length > 0 && <div className="cards">{later.map((r) => card(r))}</div>}
+          {next.length > 0 && (<><p className="group">Next week</p><div className="cards">{next.map((r) => card(r))}</div></>)}
           {!later.length && !next.length && <p className="muted pad">No matches of this type in your free hours. Try another filter, or mark more free hours. Monday is still empty.</p>}
         </section>
       </div>
@@ -145,12 +156,12 @@ export default function FreeNow({ state, actions }) {
                   <button type="button" onClick={() => actions.open(r.id)}>
                     <span className="agenda-time">{when(r)}</span>
                     <b>{r.title}</b>
-                    <span className="muted">with {r.who}, {r.place}</span>
+                    <span className="muted">{joined[r.id] === 'pending' ? `Waiting for ${r.who} to accept` : `with ${r.who}, ${r.place}`}</span>
                   </button>
                 </li>
               ))}
             </ul>
-          ) : <p className="muted">Nothing booked yet. Join a session and it shows here.</p>}
+          ) : <p className="muted">Nothing booked yet. Send a request and it shows here.</p>}
         </div>
         <div className="side-card">
           <div className="section-row tight"><h3>This week</h3><button type="button" className="btn-quiet" onClick={() => actions.go('week')}>Edit</button></div>

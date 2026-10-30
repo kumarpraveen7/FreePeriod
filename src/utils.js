@@ -125,3 +125,31 @@ export function myRating(passport) {
   if (!rated.length) return null;
   return { avg: Math.round((rated.reduce((a, p) => a + p.stars, 0) / rated.length) * 10) / 10, count: rated.length };
 }
+
+// Orders requests for the Sort control. Unrated requests (people you'd help, teams, groups) go after rated ones.
+export function sortRequests(list, sort, { have, want, ratings }) {
+  const time = (a, b) => a.day - b.day || a.start - b.start;
+  const stars = (r) => ratingOf(r, ratings[r.id]?.stars);
+  const cmp = {
+    fit: (a, b) => fitScore(b, have, want) - fitScore(a, have, want) || time(a, b),
+    rating: (a, b) => (stars(b)?.avg ?? -1) - (stars(a)?.avg ?? -1) || (stars(b)?.count ?? 0) - (stars(a)?.count ?? 0) || time(a, b),
+    time,
+  }[sort] || time;
+  return [...list].sort(cmp);
+}
+
+const FIRST_REPLY = {
+  learn: (r) => `Hi! Yes, still on for ${fmt(r.start)}. Bring your laptop and whatever you’re stuck on, and we’ll start from there.`,
+  teach: (r) => `Thanks for offering! It’s mostly ${r.tags[0]}. I’ll have my notes open so we can get straight into it.`,
+  swap: () => 'Hey! Happy to split the time half and half. You can pick which skill we do first.',
+  team: (r) => `Hi! We’d love a chat. ${when(r)} is just to talk through the idea, no commitment yet.`,
+  event: (r) => `Hey! The more the merrier. We’re meeting at ${r.place}.`,
+};
+
+// Demo stand-in for the other student typing back. n = how many replies they've already sent.
+export function chatReply(r, n, status) {
+  if (status === 'pending') return 'Just saw your request. Accepting it now!';
+  if (status) return `Perfect, see you at ${r.place}.`;
+  if (n === 0) return FIRST_REPLY[r.type](r);
+  return 'Sounds good. Send the request when you’re ready and I’ll accept it.';
+}

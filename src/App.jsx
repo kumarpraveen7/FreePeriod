@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { initialState, CLASSES } from './data.js';
-import { findRequest } from './utils.js';
+import { findRequest, fmt, chatReply } from './utils.js';
 import { freeFromClasses } from './timetable.js';
 import Landing from './landing/Landing.jsx';
 import AppShell from './app/AppShell.jsx';
@@ -28,8 +28,16 @@ export default function App() {
   const [openId, setOpenId] = useState(null);
   const [toast, setToast] = useState({ message: '', visible: false });
   const timer = useRef(null);
+  // Demo stand-ins for the other student: accepting your request and replying to messages
+  const later = useRef({});
 
-  useEffect(() => () => clearTimeout(timer.current), []);
+  const after = (id, ms, fn) => {
+    clearTimeout(later.current[id]);
+    later.current[id] = setTimeout(() => { delete later.current[id]; fn(); }, ms);
+  };
+  const clearLater = () => { Object.values(later.current).forEach(clearTimeout); later.current = {}; };
+
+  useEffect(() => () => { clearTimeout(timer.current); clearLater(); }, []);
 
   const update = (patch) => setState((s) => ({ ...s, ...(typeof patch === 'function' ? patch(s) : patch) }));
 
@@ -50,6 +58,7 @@ export default function App() {
     },
     open: (id) => setOpenId(id),
     setFilter: (filter) => update({ filter }),
+    setSort: (sort) => update({ sort }),
     setSkills: (which, list) => update({ [which]: list }),
     toggleFree: (k) => update((s) => ({ free: s.free.includes(k) ? s.free.filter((x) => x !== k) : [...s.free, k] })),
     startPost(text) {
@@ -57,7 +66,8 @@ export default function App() {
       actions.go('post');
     },
 
-    // Learning costs 1 credit, held until both students confirm the session happened.
+    // Sending a request doesn't book it: the other student has to accept first.
+    // Learning costs 1 credit, held from the request until both students confirm the session happened.
     join(r) {
       if (r.type === 'learn' && state.credits < 1) {
         return { ok: false, error: 'You need 1 credit to join. Offer help to someone to earn one.' };
@@ -65,18 +75,34 @@ export default function App() {
       update((s) => ({
         credits: r.type === 'learn' ? s.credits - 1 : s.credits,
         held: r.type === 'learn' ? s.held + 1 : s.held,
-        joined: { ...s.joined, [r.id]: 'joined' },
+        joined: { ...s.joined, [r.id]: 'pending' },
       }));
-      showToast(r.type === 'learn' ? 'Joined. 1 credit held until you both confirm.' : 'Request sent and accepted.');
+      showToast(r.type === 'learn' ? `Request sent to ${r.who}. 1 credit held while you wait.` : `Request sent to ${r.who}.`);
+      after(`accept-${r.id}`, 3000, () => {
+        update((s) => (s.joined[r.id] === 'pending' ? { joined: { ...s.joined, [r.id]: 'joined' } } : {}));
+        showToast(`${r.who} accepted. See you at ${fmt(r.start)}.`);
+      });
       return { ok: true };
     },
     cancel(r) {
+      const pending = state.joined[r.id] === 'pending';
+      clearTimeout(later.current[`accept-${r.id}`]);
       update((s) => {
         const joined = { ...s.joined };
         delete joined[r.id];
         return { joined, credits: r.type === 'learn' ? s.credits + 1 : s.credits, held: r.type === 'learn' ? s.held - 1 : s.held };
       });
-      showToast(r.type === 'learn' ? 'Cancelled. Your credit is back.' : 'Cancelled.');
+      const what = pending ? 'Request withdrawn.' : 'Cancelled.';
+      showToast(r.type === 'learn' ? `${what} Your credit is back.` : what);
+    },
+    // Message the other student, before or after sending a request
+    message(r, text) {
+      update((s) => ({ chats: { ...s.chats, [r.id]: [...(s.chats[r.id] || []), { from: 'me', text }] } }));
+      after(`chat-${r.id}`, 1400, () => update((s) => {
+        const thread = s.chats[r.id] || [];
+        const reply = chatReply(r, thread.filter((m) => m.from === 'them').length, s.joined[r.id]);
+        return { chats: { ...s.chats, [r.id]: [...thread, { from: 'them', text: reply }] } };
+      }));
     },
     done(r) {
       update((s) => ({
@@ -104,6 +130,7 @@ export default function App() {
       showToast('Posted. Students free then can see it now.');
     },
     reset() {
+      clearLater();
       setState(initialState());
       setOpenId(null);
       window.scrollTo(0, 0);
@@ -125,7 +152,7 @@ export default function App() {
       {route === 'home'
         ? <Landing state={state} go={actions.go} />
         : <AppShell route={route} state={state} go={actions.go}>{page}</AppShell>}
-      {openReq && <Drawer key={openReq.id} r={openReq} status={state.joined[openReq.id]} rating={state.ratings[openReq.id]} credits={state.credits} actions={actions} onClose={closeDrawer} />}
+      {openReq && <Drawer key={openReq.id} r={openReq} status={state.joined[openReq.id]} rating={state.ratings[openReq.id]} chat={state.chats[openReq.id] || []} credits={state.credits} actions={actions} onClose={closeDrawer} />}
       <Toast message={toast.message} visible={toast.visible} />
     </>
   );

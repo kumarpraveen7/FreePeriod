@@ -3,6 +3,7 @@ import { TYPES } from '../data.js';
 import { when, fmt, initials, ratingOf } from '../utils.js';
 import { Close, Clock, Pin, Users, Book, Shield, Spark, Star } from '../icons.jsx';
 import Stars from './Stars.jsx';
+import Chat from './Chat.jsx';
 
 // Learn and swap: you received help, so you rate. Teach: the student you helped rates you.
 const YOU_RATE = ['learn', 'swap'];
@@ -52,7 +53,7 @@ function confirmMessage(r) {
   }
 }
 
-export default function Drawer({ r, status, rating, credits, actions, onClose }) {
+export default function Drawer({ r, status, rating, chat, credits, actions, onClose }) {
   const [error, setError] = useState('');
   const panel = useRef(null);
   const t = TYPES[r.type];
@@ -108,14 +109,28 @@ export default function Drawer({ r, status, rating, credits, actions, onClose })
           <div className="chips">{r.tags.map((x) => <span key={x} className="chip static">{x}</span>)}</div>
         </div>
 
+        {status !== 'done' && <Chat key={r.id} r={r} messages={chat} onSend={actions.message} />}
+
         {!status && (
           <div className="actions">
             <button type="button" className="btn btn-primary btn-block" onClick={join}>{t.join}</button>
             <p className="err" role="alert">{error}</p>
             <p className="hint center">
-              {r.type === 'learn' ? `Costs 1 credit, held until you both confirm. You have ${credits}.` : r.type === 'teach' ? 'You’ll earn 1 credit once you both confirm.' : 'No credits change hands.'}
+              {r.who} accepts before it’s booked. {r.type === 'learn' ? `Costs 1 credit, held until you both confirm. You have ${credits}.` : r.type === 'teach' ? 'You’ll earn 1 credit once you both confirm.' : 'No credits change hands.'}
             </p>
           </div>
+        )}
+
+        {status === 'pending' && (
+          <>
+            <div className="panel waiting">
+              <h3><span className="pulse" aria-hidden="true" />Waiting for {r.who} to accept</h3>
+              <p>Your request is sent. Nothing is booked until {r.who} accepts{r.type === 'learn' ? ', and your credit comes straight back if they don’t' : ''}.</p>
+            </div>
+            <div className="actions">
+              <button type="button" className="btn btn-secondary btn-block" onClick={() => actions.cancel(r)}>Withdraw request</button>
+            </div>
+          </>
         )}
 
         {status === 'joined' && (
