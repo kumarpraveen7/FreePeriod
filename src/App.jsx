@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { initialState } from './data.js';
+import { initialState, CLASSES } from './data.js';
 import { findRequest } from './utils.js';
+import { freeFromClasses } from './timetable.js';
 import Landing from './landing/Landing.jsx';
 import AppShell from './app/AppShell.jsx';
 import FreeNow from './app/FreeNow.jsx';
@@ -83,9 +84,19 @@ export default function App() {
         credits: r.type === 'teach' ? s.credits + 1 : s.credits,
         connections: s.connections + 1,
         joined: { ...s.joined, [r.id]: 'done' },
-        passport: [...s.passport, { kind: PASSPORT_KIND[r.type], skill: r.out, with: `${PASSPORT_VERB[r.type]} ${r.who}, ${r.course}`, date: '27 Oct', note: r.note || '' }],
+        passport: [...s.passport, { kind: PASSPORT_KIND[r.type], skill: r.out, with: `${PASSPORT_VERB[r.type]} ${r.who}, ${r.course}`, date: '27 Oct', note: r.note || '', stars: r.type === 'teach' ? r.stars : undefined }],
       }));
       showToast(r.type === 'teach' ? '+1 credit. Added to your Skills Passport.' : 'Added to your Skills Passport.');
+    },
+    // The student who received the help rates the session once it's confirmed.
+    rate(r, stars, comment) {
+      update((s) => ({ ratings: { ...s.ratings, [r.id]: { stars, comment } } }));
+      showToast('Thanks. Your rating helps others choose who to learn from.');
+    },
+    // Uploaded classes replace the demo timetable, and free hours restart as the gaps between classes.
+    setTimetable(classes) {
+      update({ classes, free: freeFromClasses(classes) });
+      showToast(classes === CLASSES ? 'Back to the demo timetable.' : `Timetable imported: ${classes.length} ${classes.length === 1 ? 'class' : 'classes'}.`);
     },
     post(p) {
       update((s) => ({ myPosts: [{ id: `p${Date.now()}`, ...p }, ...s.myPosts], filter: 'all', prefill: '' }));
@@ -114,7 +125,7 @@ export default function App() {
       {route === 'home'
         ? <Landing state={state} go={actions.go} />
         : <AppShell route={route} state={state} go={actions.go}>{page}</AppShell>}
-      {openReq && <Drawer key={openReq.id} r={openReq} status={state.joined[openReq.id]} credits={state.credits} actions={actions} onClose={closeDrawer} />}
+      {openReq && <Drawer key={openReq.id} r={openReq} status={state.joined[openReq.id]} rating={state.ratings[openReq.id]} credits={state.credits} actions={actions} onClose={closeDrawer} />}
       <Toast message={toast.message} visible={toast.visible} />
     </>
   );

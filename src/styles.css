@@ -541,3 +541,30 @@ label.f, p.f { display: block; font-weight: 600; font-size: 15px; margin: 22px 0
   .ticker-track { animation: none; }
   .reveal { opacity: 1; transform: none; }
 }
+
+/* ---------- Ratings (ink, not yellow: yellow always means free time) ---------- */
+.stars { display: inline-flex; gap: 1px; color: var(--ink); vertical-align: -2px; }
+.stars svg:not([fill="currentColor"]) { color: var(--line-strong); }
+.score { display: flex; align-items: center; gap: 5px; font-size: 14px; margin-top: 2px; }
+.score b { font-weight: 700; }
+.panel.rate { gap: 12px; }
+.star-pick { display: flex; align-items: center; gap: 2px; }
+.star-pick button { width: 44px; height: 44px; border: 0; background: none; border-radius: 10px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; color: var(--line-strong); transition: transform .12s, color .12s; }
+.star-pick button.on { color: var(--ink); }
+.star-pick button:hover { transform: scale(1.1); }
+.star-pick button:focus-visible { outline: 2px solid var(--action); outline-offset: 1px; }
+.star-word { margin-left: 8px; font-size: 14px; font-weight: 600; color: var(--ink-2); }
+.panel.rate .err { margin: -4px 0 0; }
+.entry-stars { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-2); }
+.id-rating { display: flex; align-items: center; gap: 6px; margin: 18px 0 0; font-size: 14px; color: var(--band-ink); position: relative; z-index: 1; }
+.id-rating b { font-family: var(--display); font-size: 18px; }
+.id-rating + .id-credits { margin-top: 6px; }
+
+/* ---------- Timetable upload ---------- */
+.drop { display: grid; justify-items: center; gap: 4px; text-align: center; padding: 18px 12px; border: 1.5px dashed var(--line-strong); border-radius: 12px; cursor: pointer; font-size: 14px; color: var(--ink); transition: border-color .15s, background-color .15s; }
+.drop svg { color: var(--ink-2); }
+.drop:hover, .drop.over { border-color: var(--action); background: color-mix(in srgb, var(--action) 6%, transparent); }
+.drop:has(+ input:focus-visible) { border-color: var(--action); box-shadow: 0 0 0 4px color-mix(in srgb, var(--action) 18%, transparent); }
+.drop .muted { font-size: 13px; }
+.upload-links { display: flex; justify-content: space-between; gap: 8px; margin-top: 6px; }
+.upload-links .btn-quiet { display: inline-flex; align-items: center; font-size: 14px; }

@@ -1,7 +1,46 @@
 import { useEffect, useRef, useState } from 'react';
 import { TYPES } from '../data.js';
-import { when, fmt, initials } from '../utils.js';
-import { Close, Clock, Pin, Users, Book, Shield, Spark } from '../icons.jsx';
+import { when, fmt, initials, ratingOf } from '../utils.js';
+import { Close, Clock, Pin, Users, Book, Shield, Spark, Star } from '../icons.jsx';
+import Stars from './Stars.jsx';
+
+// Learn and swap: you received help, so you rate. Teach: the student you helped rates you.
+const YOU_RATE = ['learn', 'swap'];
+const STAR_WORDS = ['', 'Not helpful', 'Could be better', 'Good', 'Really helpful', 'Brilliant'];
+
+function RateForm({ r, onRate }) {
+  const [stars, setStars] = useState(0);
+  const [hover, setHover] = useState(0);
+  const [comment, setComment] = useState('');
+  const [error, setError] = useState('');
+  const shown = hover || stars;
+
+  const submit = () => {
+    if (!stars) { setError('Pick from 1 to 5 stars first.'); return; }
+    onRate(r, stars, comment.trim());
+  };
+
+  return (
+    <div className="panel rate">
+      <h3>How was your session with {r.who}?</h3>
+      <p>Only the person who received help rates the session. It helps other students choose who to learn from.</p>
+      <div className="star-pick" role="radiogroup" aria-label="Rating" onMouseLeave={() => setHover(0)}>
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button key={n} type="button" role="radio" aria-checked={stars === n} aria-label={`${n} ${n === 1 ? 'star' : 'stars'}, ${STAR_WORDS[n]}`}
+            className={n <= shown ? 'on' : ''} onMouseEnter={() => setHover(n)} onClick={() => { setStars(n); setError(''); }}>
+            <Star size={30} filled={n <= shown} />
+          </button>
+        ))}
+        <span className="star-word">{STAR_WORDS[shown]}</span>
+      </div>
+      <label className="sr" htmlFor="rate-comment">Comment (optional)</label>
+      <input id="rate-comment" className="input" value={comment} maxLength={140} placeholder={`Optional: what did ${r.who} explain well?`}
+        onChange={(e) => setComment(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') submit(); }} />
+      <p className="err" role="alert">{error}</p>
+      <button type="button" className="btn btn-primary btn-block" onClick={submit}>Submit rating</button>
+    </div>
+  );
+}
 
 function confirmMessage(r) {
   switch (r.type) {
@@ -13,10 +52,11 @@ function confirmMessage(r) {
   }
 }
 
-export default function Drawer({ r, status, credits, actions, onClose }) {
+export default function Drawer({ r, status, rating, credits, actions, onClose }) {
   const [error, setError] = useState('');
   const panel = useRef(null);
   const t = TYPES[r.type];
+  const score = ratingOf(r, rating?.stars);
 
   useEffect(() => {
     const prev = document.activeElement;
@@ -51,6 +91,7 @@ export default function Drawer({ r, status, credits, actions, onClose }) {
           <div>
             <div className="person-name">{r.who}</div>
             <div className="muted">{r.course}</div>
+            {score && <div className="score"><Star size={14} /><b>{score.avg.toFixed(1)}</b><span className="muted">from {score.count} sessions</span></div>}
           </div>
           <span className="verified"><Shield size={14} />Verified UCD</span>
         </div>
@@ -92,6 +133,13 @@ export default function Drawer({ r, status, credits, actions, onClose }) {
         {status === 'done' && (
           <>
             <div className="panel ok"><h3>Added to your Skills Passport</h3><p>Confirmed by both of you. You and {r.who} are now connected.</p></div>
+            {YOU_RATE.includes(r.type) && !rating && <RateForm r={r} onRate={actions.rate} />}
+            {YOU_RATE.includes(r.type) && rating && (
+              <div className="panel"><h3>You rated {r.who} <Stars value={rating.stars} /></h3>{rating.comment && <p>“{rating.comment}”</p>}</div>
+            )}
+            {r.type === 'teach' && r.stars && (
+              <div className="panel"><h3>{r.who} rated you <Stars value={r.stars} /></h3>{r.note && <p>{r.note}</p>}</div>
+            )}
             <div className="actions">
               <button type="button" className="btn btn-primary btn-block" onClick={() => { onClose(); actions.go('passport'); }}>View my passport</button>
             </div>

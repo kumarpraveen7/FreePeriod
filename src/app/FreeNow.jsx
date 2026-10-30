@@ -154,7 +154,7 @@ export default function FreeNow({ state, actions }) {
         </div>
         <div className="side-card">
           <div className="section-row tight"><h3>This week</h3><button type="button" className="btn-quiet" onClick={() => actions.go('week')}>Edit</button></div>
-          <WeekGrid free={free} variant="mini" />
+          <WeekGrid classes={state.classes} free={free} variant="mini" />
         </div>
         <div className="side-card">
           <h3>How credits work</h3>

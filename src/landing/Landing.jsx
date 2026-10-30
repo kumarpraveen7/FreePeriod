@@ -1,6 +1,7 @@
 import { REQUESTS, TYPES, INSIGHTS } from '../data.js';
 import WeekGrid from '../components/WeekGrid.jsx';
 import Reveal from '../components/Reveal.jsx';
+import { classHours } from '../utils.js';
 import { Logo, Arrow, Shield, Book, Users, Lock, Pin, Spark, Check } from '../icons.jsx';
 
 const WEF = 'https://cn.weforum.org/publications/the-future-of-jobs-report-2025/in-full/3-skills-outlook/';
@@ -72,10 +73,10 @@ export default function Landing({ state, go }) {
               <div className="poster-head">
                 <div>
                   <p className="poster-kicker">My real Autumn timetable</p>
-                  <p className="poster-title">8 hours of class. {state.free.length} free hours on campus.</p>
+                  <p className="poster-title">{classHours(state.classes)} hours of class. {state.free.length} free hours on campus.</p>
                 </div>
               </div>
-              <WeekGrid free={state.free} variant="hero" />
+              <WeekGrid classes={state.classes} free={state.free} variant="hero" />
             </div>
             <div className="note note-a">
               <span className="note-time">Today, 11:00</span>
@@ -137,7 +138,7 @@ export default function Landing({ state, go }) {
           </Reveal>
           <div className="steps">
             <Reveal className="step" delay={0}>
-              <div className="step-visual"><WeekGrid free={state.free} variant="mini" /></div>
+              <div className="step-visual"><WeekGrid classes={state.classes} free={state.free} variant="mini" /></div>
               <span className="step-num">1</span>
               <h3>Mark your free hours</h3>
               <p>Your classes come from your timetable. Tap the gaps when you’re on campus with nothing on.</p>

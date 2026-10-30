@@ -1,22 +1,21 @@
-import { CLASSES } from '../data.js';
-import { gaps, gapLabel } from '../utils.js';
+import { gaps, gapLabel, classHours } from '../utils.js';
 import WeekGrid from '../components/WeekGrid.jsx';
 import SkillEditor from '../components/SkillEditor.jsx';
+import TimetableUpload from '../components/TimetableUpload.jsx';
 
 export default function Week({ state, actions }) {
-  const classHours = Math.round(CLASSES.reduce((a, c) => a + c.mins, 0) / 60);
   const g = gaps(state.free);
 
   return (
     <div className="page">
       <header className="page-head">
         <h1 className="page-title">My week</h1>
-        <p className="page-sub">Classes come from your Autumn timetable. Select the hours you’re on campus with nothing on, and matches follow.</p>
+        <p className="page-sub">Upload your timetable and the gaps between classes are marked free. Select any other hours you’re on campus with nothing on, and matches follow.</p>
       </header>
       <div className="layout-2">
         <div className="col-main">
           <div className="grid-card">
-            <WeekGrid free={state.free} variant="full" onToggle={actions.toggleFree} />
+            <WeekGrid classes={state.classes} free={state.free} variant="full" onToggle={actions.toggleFree} />
             <div className="legend">
               <span><span className="sw sw-free" />Free on campus</span>
               <span><span className="sw sw-cls" />Class</span>
@@ -25,8 +24,9 @@ export default function Week({ state, actions }) {
           </div>
         </div>
         <aside className="col-side">
+          <TimetableUpload classes={state.classes} onImport={actions.setTimetable} />
           <div className="side-card stats-card">
-            <div><b>{classHours}</b><span>hours of class</span></div>
+            <div><b>{classHours(state.classes)}</b><span>hours of class</span></div>
             <div><b>{state.free.length}</b><span>free hours on campus</span></div>
           </div>
           <div className="side-card">

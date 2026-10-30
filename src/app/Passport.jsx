@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { PROFILE } from '../data.js';
-import { cvText, initials } from '../utils.js';
-import { Logo, Shield, Check } from '../icons.jsx';
+import { cvText, initials, myRating } from '../utils.js';
+import Stars from '../components/Stars.jsx';
+import { Logo, Shield, Check, Star } from '../icons.jsx';
 
 const LABELS = { taught: 'Taught', learned: 'Learned', swapped: 'Swapped', project: 'Project', event: 'Went as a group' };
 const BADGE = { taught: 'teach', learned: 'learn', swapped: 'swap', project: 'team', event: 'event' };
@@ -15,6 +16,7 @@ export default function Passport({ state, actions }) {
   const sessions = state.passport.filter((p) => p.kind !== 'event' && p.kind !== 'project').length;
   const faculties = new Set(state.passport.map((p) => p.with.split(', ').slice(1).join(', '))).size;
   const summary = cvText(state.passport, state.connections);
+  const score = myRating(state.passport);
 
   const copy = async () => {
     try { await navigator.clipboard.writeText(summary); actions.toast('CV summary copied.'); }
@@ -38,6 +40,7 @@ export default function Passport({ state, actions }) {
                   <span className="row"><span className={`badge b-${BADGE[p.kind]}`}>{LABELS[p.kind]}</span><span className="credit">{p.date}</span></span>
                   <b className="entry-skill">{p.skill}</b>
                   <span className="muted">{p.with}</span>
+                  {p.stars && <span className="entry-stars"><Stars value={p.stars} size={14} />Rated by the student you helped</span>}
                   {p.note && <span className="entry-note">{p.note}</span>}
                   <span className="ver">Confirmed by both students</span>
                 </div>
@@ -75,6 +78,7 @@ export default function Passport({ state, actions }) {
               <div><b>{faculties}</b><span>Courses met</span></div>
               <div><b>{state.connections}</b><span>Connections</span></div>
             </div>
+            {score && <p className="id-rating"><Star size={15} /><b>{score.avg.toFixed(1)}</b> average from {score.count} {score.count === 1 ? 'learner' : 'learners'}</p>}
             <p className="id-credits">{state.credits} credits{state.held ? `, ${state.held} held` : ''}</p>
           </div>
           <div className="side-card">

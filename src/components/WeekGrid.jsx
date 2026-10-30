@@ -1,8 +1,8 @@
-import { DAYS, DAY_NAMES, HOURS, TODAY, CLASSES } from '../data.js';
+import { DAYS, DAY_NAMES, HOURS, TODAY } from '../data.js';
 import { fmt, key } from '../utils.js';
 
 // variant: 'mini' (sidebar), 'hero' (landing poster, animated), 'full' (interactive editor)
-export default function WeekGrid({ free, variant = 'full', onToggle }) {
+export default function WeekGrid({ classes, free, variant = 'full', onToggle }) {
   const interactive = variant === 'full' && onToggle;
   const cells = [<div key="corner" style={{ gridColumn: 1, gridRow: 1 }} />];
   let freeIndex = 0;
@@ -18,7 +18,7 @@ export default function WeekGrid({ free, variant = 'full', onToggle }) {
     HOURS.forEach((hr, j) => {
       const row = j + 2;
       const col = d + 2;
-      const cls = CLASSES.find((c) => c.d === d && c.s === hr);
+      const cls = classes.find((c) => c.d === d && c.s === hr);
       if (cls) {
         cells.push(
           <div key={`c-${d}-${hr}`} className="cell cls" style={{ gridColumn: col, gridRow: `${row} / span ${cls.e - cls.s}` }}>
@@ -27,7 +27,7 @@ export default function WeekGrid({ free, variant = 'full', onToggle }) {
         );
         return;
       }
-      if (CLASSES.some((c) => c.d === d && hr > c.s && hr < c.e)) return;
+      if (classes.some((c) => c.d === d && hr > c.s && hr < c.e)) return;
       const k = key(d, hr);
       const isFree = free.includes(k);
       const style = { gridColumn: col, gridRow: row, '--i': isFree ? freeIndex++ : 0 };

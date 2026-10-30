@@ -11,6 +11,7 @@ export function dayLabel(d) {
 export const when = (r) => `${dayLabel(r.day)}, ${fmt(r.start)} to ${fmt(r.end)}`;
 export const gapLabel = (g) => `${dayLabel(g.d)}, ${fmt(g.s)} to ${fmt(g.e)}`;
 export const findRequest = (id) => REQUESTS.find((r) => r.id === id) || null;
+export const classHours = (classes) => Math.round(classes.reduce((a, c) => a + c.mins, 0) / 60);
 export const initials = (name) => name.split(/\s+/).map((w) => w[0] || '').join('').slice(0, 2).toUpperCase();
 
 // Contiguous runs of free hours, e.g. [{ d: 1, s: 11, e: 14 }]
@@ -105,6 +106,22 @@ export function cvText(passport, connections) {
   if (taught.length) parts.push(`Taught ${joinList(taught)} to students from other courses in ${taught.length} peer-verified ${taught.length === 1 ? 'session' : 'sessions'}`);
   if (learned.length) parts.push(`learned ${joinList(learned)} through peer skill exchange`);
   if (projects.length) parts.push(`joined a cross-faculty team (${joinList(projects)})`);
+  const score = myRating(passport);
+  if (score) parts.push(`rated ${score.avg.toFixed(1)}/5 by the students I helped`);
   parts.push(`built ${connections} connections across UCD`);
   return `Peer learning at UCD, Free Period (2026): ${parts.join('; ')}.`;
+}
+
+// A helper's average including the rating you gave them (mine), e.g. { avg: 4.9, count: 15 }
+export function ratingOf(r, mine) {
+  if (!r.rating) return null;
+  if (!mine) return { avg: r.rating, count: r.reviews };
+  return { avg: Math.round(((r.rating * r.reviews + mine) / (r.reviews + 1)) * 10) / 10, count: r.reviews + 1 };
+}
+
+// Average of the ratings learners gave you on sessions you taught
+export function myRating(passport) {
+  const rated = passport.filter((p) => p.kind === 'taught' && p.stars);
+  if (!rated.length) return null;
+  return { avg: Math.round((rated.reduce((a, p) => a + p.stars, 0) / rated.length) * 10) / 10, count: rated.length };
 }
